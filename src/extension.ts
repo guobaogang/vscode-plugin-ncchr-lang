@@ -1,6 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+const path = require('path');
+const fs = require('fs');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -22,7 +24,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let replaceTest = vscode.commands.registerCommand('vscode-plugin-ncchr-lang.replace', () => {
 		// The code you place here will be executed every time your command is executed
-
 		// Display a message box to the user
 		vscode.window.activeTextEditor?.edit(editBuilder => {
 			// 从开始到结束，全量替换
@@ -63,10 +64,10 @@ export function activate(context: vscode.ExtensionContext) {
 				}) */
 			/* vscode.window.showQuickPick(
 				[
-					"哈哈哈，你是傻逼吗",
-					"哈哈哈，你是二逼么",
-					"你他妈有病吧",
-					"乖，你是妈的智障"
+					"1",
+					"2",
+					"3",
+					"4"
 				],
 				{
 					canPickMany:true,
@@ -83,6 +84,29 @@ export function activate(context: vscode.ExtensionContext) {
 			const selection: vscode.Selection = vscode.window.activeTextEditor?.selection;
 			const text = '替换后的内容';
 			editBuilder.replace(selection, text);
+			const fileName = vscode.window.activeTextEditor?.document.fileName
+			const workDir = path.dirname(fileName);
+			console.log(workDir);
+			const langFile = 'd:\\Ncc\\ncc-web-container\\src\\hrhi\\public\\lang\\standard\\simpchn\\hihr6007.json';
+			try {
+				let data = fs.readFileSync(langFile, 'utf-8');
+				console.log(data);
+				let stringData = data.toString();
+				console.log(stringData);
+				let jsondata = JSON.parse(stringData);
+				console.log(jsondata);
+				let afertStringData = JSON.stringify(jsondata, null, '\t')
+				console.log(afertStringData);
+				fs.writeFileSync(langFile, afertStringData)
+				/* .toString();
+				data = JSON.parse(data);
+				console.log(data);
+				data['hihr-000037'] = '替换后的内容';
+				fs.writeFileSync(langFile, JSON.stringify(data)) */
+			} catch (err) {
+				// 出错了
+				console.log(err);
+			}
 		});
 	});
 
