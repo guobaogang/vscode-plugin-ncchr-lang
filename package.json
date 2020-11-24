@@ -10,14 +10,14 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:vscode-plugin-ncchr-lang.replace"
+		"onCommand:ncchr-lang.replace"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "vscode-plugin-ncchr-lang.replace",
-				"title": "Replace"
+				"command": "ncchr-lang.replace",
+				"title": "NCCHR替换多语"
 			}
 		]
 	},

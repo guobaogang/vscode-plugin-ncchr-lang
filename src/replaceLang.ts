@@ -3,63 +3,12 @@
 import * as vscode from 'vscode';
 const path = require('path');
 const fs = require('fs');
+let activeText: vscode.TextEditor | undefined = undefined;
 export default function replaceLang(): void {
 	vscode.window.activeTextEditor?.edit(editBuilder => {
-		// 从开始到结束，全量替换
-		/* const end = new vscode.Position(vscode.window.activeTextEditor.document.lineCount + 1, 0);
-		const text = '新替换的内容';
-		editBuilder.replace(new vscode.Range(new vscode.Position(0, 0), end), text); */
-		/* const panel = vscode.window.createWebviewPanel(
-			'testWebview', // viewType
-			"WebView演示", // 视图标题
-			{ viewColumn: vscode.ViewColumn.One, preserveFocus: false }
-			, // 显示在编辑器的哪个部位
-			{
-				enableScripts: true, // 启用JS，默认禁用
-				retainContextWhenHidden: true, // webview被隐藏时保持状态，避免被重置
-			}
-		);
-		panel.webview.html = `<html><body>你好，我是Webview</body></html>` */
-		/* vscode.window.showInputBox(
-			{ // 这个对象中所有参数都是可选参数
-				password: false, // 输入内容是否是密码
-				ignoreFocusOut: true, // 默认false，设置为true时鼠标点击别的地方输入框不会消失
-				placeHolder: '你到底想输入什么？', // 在输入框内的提示信息
-				prompt: '赶紧输入，不输入就赶紧滚', // 在输入框下方的提示信息
-				validateInput: function (text) { return text; } // 对输入内容进行验证并返回
-			}).then(function (msg) {
-				console.log("用户输入：" + msg);
-			}); */
-		/* vscode.window.showOpenDialog(
-			{ // 可选对象
-				canSelectFiles:true, // 是否可选文件
-				canSelectFolders:false, // 是否可选文件夹
-				canSelectMany:true, // 是否可以选择多个
-				defaultUri:vscode.Uri.file("/D:/"), // 默认打开本地路径
-				openLabel:'按钮文字说明'
-			}).then(function(msg){
-				//@ts-ignore
-				console.log(msg.path);
-			}) */
-		/* vscode.window.showQuickPick(
-			[
-				"1",
-				"2",
-				"3",
-				"4"
-			],
-			{
-				canPickMany:true,
-				ignoreFocusOut:true,
-				matchOnDescription:true,
-				matchOnDetail:true,
-				placeHolder:'温馨提示，请选择你是哪种类型？'
-			})
-			.then(function(msg){
-			console.log(msg);
-		}) */
-
-		const languageId = vscode.window.activeTextEditor?.document.languageId;
+		activeText = vscode.window.activeTextEditor;
+		if (!activeText) return;
+		const languageId = activeText.document.languageId;
 		if (languageId === 'json') {
 			vscode.window.showInformationMessage('不可以在json文件中使用!');
 			return;
@@ -104,12 +53,13 @@ export default function replaceLang(): void {
  */
 function getSelection() {
 	//@ts-ignore
-	const selection: vscode.Selection = vscode.window.activeTextEditor?.selection;
+	const selection = activeText.selection;
 	if (selection.isEmpty) {
 		return { selection }
 	}
 	//先判断选中的是否包含引号
-	let curText = vscode.window.activeTextEditor?.document.getText(selection);
+	//@ts-ignore
+	let curText = activeText?.document.getText(selection);
 	const reg = /^['|"](.*)['|"]$/;
 	let curFlag = false;
 	if (curText?.startsWith('\'') || curText?.startsWith('\"')) {
@@ -120,7 +70,8 @@ function getSelection() {
 	if (!curFlag) {
 		//@ts-ignore
 		const newRange = new vscode.Range(new vscode.Position(selection.start.line, selection.start.character - 1), new vscode.Position(selection.end.line, selection.end.character + 1));
-		let newText = vscode.window.activeTextEditor?.document.getText(newRange);
+		//@ts-ignore
+		let newText = activeText.document.getText(newRange);
 		let newFlag = false;
 		if (newText?.startsWith('\'') || newText?.startsWith('\"')) {
 			newFlag = true;
@@ -130,14 +81,16 @@ function getSelection() {
 			return {
 				selection: newRange,
 				_text: newText,
-				lineEnd: vscode.window.activeTextEditor?.document.lineAt(selection.start).range.end
+				//@ts-ignore
+				lineEnd: activeText.document.lineAt(selection.start).range.end
 			};
 		}
 	}
 	return {
 		selection,
 		_text: curText,
-		lineEnd: vscode.window.activeTextEditor?.document.lineAt(selection.start).range.end
+		//@ts-ignore
+		lineEnd: activeText.document.lineAt(selection.start).range.end
 	};
 }
 
@@ -146,7 +99,8 @@ function getSelection() {
  * 需要解析出module,当前模块路径等信息
  */
 function getCurrFileInfo() {
-	const fileName = vscode.window.activeTextEditor?.document.fileName;
+	//@ts-ignore
+	const fileName = activeText.document.fileName;
 	const workFileDir = path.dirname(fileName);
 	let module = '', moduleDir = '';
 	const [workSpace, moduleSpace] = workFileDir.split('src');
@@ -187,7 +141,7 @@ function handleLangData(langJson: any = {}, _text: String, module: String) {
 	const lastKey = allKeys[allKeys.length - 1];
 	let nextKey = '';
 	if (!lastKey) {
-		nextKey = module + '-' + '000001';
+		nextKey = module + '-' + '000000';
 		langJson[nextKey] = _text;
 	} else {
 		nextKey = getNextKey(lastKey);
@@ -219,9 +173,9 @@ function getNextKey(key: String) {
  */
 function getIsInObject(selEnd: any) {
 	//@ts-ignore
-	const fileEnd = new vscode.Position(vscode.window.activeTextEditor.document.lineCount + 1, 0);
+	const fileEnd = new vscode.Position(activeText.document.lineCount + 1, 0);
 	//@ts-ignore
-	const fileText = vscode.window.activeTextEditor?.document.getText(new vscode.Range(selEnd, fileEnd)) || '';
+	const fileText = activeText.document.getText(new vscode.Range(selEnd, fileEnd)) || '';
 	const reg = /<|}/;
 	let result = reg.exec(fileText);
 	return result && result[0] === "}"
