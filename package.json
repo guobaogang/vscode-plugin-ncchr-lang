@@ -10,16 +10,11 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:vscode-plugin-ncchr-lang.helloWorld",
 		"onCommand:vscode-plugin-ncchr-lang.replace"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
-			{
-				"command": "vscode-plugin-ncchr-lang.helloWorld",
-				"title": "Hello World"
-			},
 			{
 				"command": "vscode-plugin-ncchr-lang.replace",
 				"title": "Replace"
