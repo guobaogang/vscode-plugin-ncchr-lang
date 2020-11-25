@@ -4,22 +4,24 @@ import * as vscode from 'vscode';
 const path = require('path');
 const fs = require('fs');
 let activeText: vscode.TextEditor | undefined = undefined;
-export default function replaceLang(): void {
-	vscode.window.activeTextEditor?.edit(editBuilder => {
-		activeText = vscode.window.activeTextEditor;
-		if (!activeText) return;
-		const languageId = activeText.document.languageId;
-		if (languageId === 'json') {
-			vscode.window.showInformationMessage('不可以在json文件中使用!');
-			return;
-		};
-		const { selection, _text, lineEnd } = getSelection();
-		if (selection.isEmpty) {
-			vscode.window.showInformationMessage('未选择任何文字!');
-			return;
-		}
-		const { module, moduleDir } = getCurrFileInfo();
-		const langFile = getTargetFile(moduleDir);
+export default async function replaceLang(): Promise<void> {
+	activeText = vscode.window.activeTextEditor;
+	if (!activeText) return;
+	const languageId = activeText.document.languageId;
+	if (languageId === 'json') {
+		vscode.window.showErrorMessage('不可以在json文件中使用!');
+		return;
+	};
+	const { selection, _text } = getSelection();
+	if (selection.isEmpty) {
+		vscode.window.showErrorMessage('未选择任何文字!');
+		return;
+	}
+	const { module, moduleDir } = getCurrFileInfo();
+	const prefix = await inputPrefix();
+	const targetFileName = await selectTargetFileName(moduleDir);
+	const langFile = getTargetFile(moduleDir, targetFileName);
+	activeText?.edit(editBuilder => {
 		try {
 			let data = fs.readFileSync(langFile, 'utf-8');
 			let jsondata = JSON.parse(data.toString());
@@ -29,17 +31,12 @@ export default function replaceLang(): void {
 				fs.writeFileSync(langFile, afertStringData)
 			}
 			const isInObject = getIsInObject(selection.end);
-			let comm = '';
 			if (isInObject) {
-				langKey = `this.state.json['${langKey}']`;
-				comm = ` /*多语: ${_text} */`;
+				langKey = `${prefix}['${langKey}']  /*多语: ${_text} */`;
 			} else {
-				langKey = `{this.state.json['${langKey}']}`;
-				comm = ` {/*多语: ${_text} */}`;
+				langKey = `{${prefix}['${langKey}'] /*多语: ${_text} */}`;
 			}
 			editBuilder.replace(selection, langKey);
-			//@ts-ignore
-			editBuilder.insert(lineEnd, comm);
 		} catch (err) {
 			// 出错了
 			console.log(err);
@@ -80,17 +77,13 @@ function getSelection() {
 		if (newFlag) {
 			return {
 				selection: newRange,
-				_text: newText,
-				//@ts-ignore
-				lineEnd: activeText.document.lineAt(selection.start).range.end
+				_text: newText
 			};
 		}
 	}
 	return {
 		selection,
-		_text: curText,
-		//@ts-ignore
-		lineEnd: activeText.document.lineAt(selection.start).range.end
+		_text: curText
 	};
 }
 
@@ -113,8 +106,8 @@ function getCurrFileInfo() {
  * 获取目标多语文件
  * @param moduleDir 
  */
-function getTargetFile(moduleDir: String): String {
-	return moduleDir + '\\public\\lang\\standard\\simpchn\\hihr6007.json';
+function getTargetFile(moduleDir: String, targetFileName: any): String {
+	return moduleDir + '\\public\\lang\\standard\\simpchn\\' + targetFileName;
 }
 
 /**
@@ -167,8 +160,9 @@ function getNextKey(key: String) {
 }
 
 /**
- * 判断需要替换的字符串是否在对象中
- * 判断下一个出现的字符是'<'还是'}'
+ * 简单(不一定适用所有情况)判断需要替换的字符串是否在对象中
+ * 判断下一个出现的字符是'<''{'还是'}'
+ * 如果下一个出现的是}说明当前在对象中，否则在html标签中
  * @param selEnd 
  */
 function getIsInObject(selEnd: any) {
@@ -176,7 +170,54 @@ function getIsInObject(selEnd: any) {
 	const fileEnd = new vscode.Position(activeText.document.lineCount + 1, 0);
 	//@ts-ignore
 	const fileText = activeText.document.getText(new vscode.Range(selEnd, fileEnd)) || '';
-	const reg = /<|}/;
+	const reg = /<|}|{/;
 	let result = reg.exec(fileText);
 	return result && result[0] === "}"
+}
+
+/**
+ * 用户输入，获取多语对象
+ */
+function inputPrefix() {
+	return new Promise((resolve, reject) => {
+		vscode.window.showInputBox(
+			{
+				password: false, // 输入内容是否是密码
+				ignoreFocusOut: false, // 默认false，设置为true时鼠标点击别的地方输入框不会消失
+				prompt: '请输入多语前缀，如json、this.state.language等',
+				value: 'json'
+			}).then(function (msg) {
+				resolve(msg)
+			});
+	})
+}
+
+/**
+ * 读取当前模块下多语文件，让用户选择
+ * 下一步计划，判断如果没有多语文件，需要逐级添加文件夹和文件
+ * @param moduleDir 
+ */
+function selectTargetFileName(moduleDir: String) {
+	const langDir = moduleDir + "\\public\\lang\\standard\\simpchn"
+	return new Promise((resolve, reject) => {
+		fs.readdir(langDir, function (err: any, files: any) {
+			if (err) {
+				reject(err)
+			} else {
+				if (files.length === 1) {
+					resolve(files[0]);
+				}
+				vscode.window.showQuickPick(
+					files,
+					{
+						canPickMany: false,
+						placeHolder: '请选择多语文件'
+					})
+					.then(function (msg) {
+						resolve(msg);
+					})
+			};
+
+		})
+	})
 }

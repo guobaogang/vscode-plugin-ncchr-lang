@@ -3,6 +3,7 @@
 	"displayName": "vscode-plugin-ncchr-lang",
 	"description": "vscode插件 ncchr多语",
 	"version": "0.0.1",
+	"publisher": "guobg828",
 	"engines": {
 		"vscode": "^1.51.0"
 	},
@@ -13,6 +14,10 @@
 		"onCommand:ncchr-lang.replace"
 	],
 	"main": "./dist/extension.js",
+	"repository": { 
+		"type": "git", 
+		"url": "https://github.com/guobaogang/vscode-plugin-ncchr-lang.git"
+	},
 	"contributes": {
 		"commands": [
 			{
