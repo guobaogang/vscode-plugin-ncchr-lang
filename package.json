@@ -1,8 +1,8 @@
 {
 	"name": "vscode-plugin-ncchr-lang",
 	"displayName": "vscode-plugin-ncchr-lang",
-	"description": "vscode插件 ncchr多语",
-	"version": "0.0.1",
+	"description": "ncchr多语辅助工具",
+	"version": "1.0.0",
 	"publisher": "guobg828",
 	"engines": {
 		"vscode": "^1.51.0"

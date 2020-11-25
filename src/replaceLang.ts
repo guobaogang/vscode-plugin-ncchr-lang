@@ -161,7 +161,7 @@ function getNextKey(key: String) {
 
 /**
  * 简单(不一定适用所有情况)判断需要替换的字符串是否在对象中
- * 判断下一个出现的字符是'<''{'还是'}'
+ * 判断下一个出现的字符是'<'还是'}'
  * 如果下一个出现的是}说明当前在对象中，否则在html标签中
  * @param selEnd 
  */
@@ -170,7 +170,7 @@ function getIsInObject(selEnd: any) {
 	const fileEnd = new vscode.Position(activeText.document.lineCount + 1, 0);
 	//@ts-ignore
 	const fileText = activeText.document.getText(new vscode.Range(selEnd, fileEnd)) || '';
-	const reg = /<|}|{/;
+	const reg = /<|}/;
 	let result = reg.exec(fileText);
 	return result && result[0] === "}"
 }
